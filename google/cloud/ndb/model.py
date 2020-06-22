@@ -3536,66 +3536,14 @@ class KeyProperty(Property):
             yield name, is_keyword
 
     def _validate(self, value):
-        """Validate a ``value`` before setting it.
-
-        Args:
-            value (.Key): The value to check.
-
-        Raises:
-            .BadValueError: If ``value`` is not a :class:`.Key`.
-            .BadValueError: If ``value`` is a partial :class:`.Key` (i.e. it
-                has no name or ID set).
-            .BadValueError: If the current property has an associated ``kind``
-                and ``value`` does not match that kind.
-        """
-        if not isinstance(value, Key):
-            raise exceptions.BadValueError(
-                "Expected Key, got {!r}".format(value)
-            )
-
-        # Reject incomplete keys.
-        if not value.id():
-            raise exceptions.BadValueError(
-                "Expected complete Key, got {!r}".format(value)
-            )
-
-        # Verify kind if provided.
-        if self._kind is not None:
-            if value.kind() != self._kind:
-                raise exceptions.BadValueError(
-                    "Expected Key with kind={!r}, got "
-                    "{!r}".format(self._kind, value)
-                )
+        if not isinstance(value, Model):
+            raise TypeError('expected an ndb.Model, got %s' % repr(value))
 
     def _to_base_type(self, value):
-        """Convert a value to the "base" value type for this property.
-
-        Args:
-            value (~key.Key): The value to be converted.
-
-        Returns:
-            google.cloud.datastore.Key: The converted value.
-
-        Raises:
-            TypeError: If ``value`` is not a :class:`~key.Key`.
-        """
-        if not isinstance(value, key_module.Key):
-            raise TypeError(
-                "Cannot convert to datastore key, expected Key value; "
-                "received {}".format(value)
-            )
         return value._key
 
     def _from_base_type(self, value):
-        """Convert a value from the "base" value type for this property.
-
-        Args:
-            value (google.cloud.datastore.Key): The value to be converted.
-
-        Returns:
-            key.Key: The converted value.
-        """
-        return key_module.Key._from_ds_key(value)
+        return key_module.Key._from_ds_key(value).get()
 
 
 class BlobKeyProperty(Property):
@@ -3773,30 +3721,20 @@ class DateTimeProperty(Property):
             self._store_value(entity, value)
 
     def _from_base_type(self, value):
-        """Convert a value from the "base" value type for this property.
 
-        Args:
-            value (Union[int, datetime.datetime]): The value to be converted.
-                The value will be `int` for entities retrieved by a projection
-                query and is a timestamp as the number of nanoseconds since the
-                epoch.
-
-        Returns:
-            Optional[datetime.datetime]: If ``tzinfo`` is set on this property,
-                the value converted to the timezone in ``tzinfo``. Otherwise
-                returns the value without ``tzinfo`` or ``None`` if value did
-                not have ``tzinfo`` set.
-        """
         if isinstance(value, six.integer_types):
             # Projection query, value is integer nanoseconds
             seconds = value / 1e6
             value = datetime.datetime.fromtimestamp(seconds, pytz.utc)
 
-        if self._tzinfo is not None:
+        if not isinstance(value, str) and self._tzinfo is not None:
             return value.astimezone(self._tzinfo)
 
-        elif value.tzinfo is not None:
+        elif not isinstance(value, str) and value.tzinfo is not None:
             return value.replace(tzinfo=None)
+
+        else:
+            return None
 
     def _to_base_type(self, value):
         """Convert a value to the "base" value type for this property.

@@ -1342,12 +1342,13 @@ class Query(object):
             project = app
 
         if default_options is not None:
-            _log.warning(
-                "Deprecation warning: passing default_options to the Query"
-                "constructor is deprecated. Please directly pass any "
-                "arguments you want to use to the Query constructor or its "
-                "methods."
-            )
+            pass
+            # _log.warning(
+            #     "Deprecation warning: passing default_options to the Query"
+            #     "constructor is deprecated. Please directly pass any "
+            #     "arguments you want to use to the Query constructor or its "
+            #     "methods."
+            # )
 
             if not isinstance(default_options, QueryOptions):
                 raise TypeError(
